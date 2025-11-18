@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSerf" Version="0.1.5-beta" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Yarp.ReverseProxy.NSerfDiscovery/Yarp.ReverseProxy.NSerfDiscovery.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  test-gateway:
+    build:
+      context: .
+      dockerfile: TestGateway/Dockerfile
+    image: test-gateway:latest
+
+  test-service:
+    build:
+      context: .
+      dockerfile: TestService/Dockerfile
+    image: test-service:latest
