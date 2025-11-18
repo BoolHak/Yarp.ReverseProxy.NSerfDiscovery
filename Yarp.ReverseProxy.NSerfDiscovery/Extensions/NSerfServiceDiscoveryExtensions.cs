@@ -33,12 +33,13 @@ internal class NSerfServiceDiscoveryHostedService(
 {
     private NSerfServiceProvider? _provider;
 
+    /// <summary>
+    /// Starts the NSerf service discovery provider and wires discovered instances into the registry.
+    /// </summary>
+    /// <param name="cancellationToken">Token used to cancel the startup operation.</param>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("[NSerfServiceDiscovery] Starting service discovery provider");
-
-        // Wait for SerfAgent to start
-        await Task.Delay(2000, cancellationToken);
 
         try
         {
@@ -78,6 +79,10 @@ internal class NSerfServiceDiscoveryHostedService(
         }
     }
 
+    /// <summary>
+    /// Stops the NSerf service discovery provider and releases associated resources.
+    /// </summary>
+    /// <param name="cancellationToken">Token used to cancel the stop operation.</param>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         if (_provider != null)

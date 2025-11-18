@@ -17,10 +17,7 @@ public static class NSerfTagBasedExtensions
     /// </summary>
     public static IReverseProxyBuilder LoadFromNSerfTags(this IReverseProxyBuilder builder, string yarpTagName = "yarp:config")
     {
-        // Ensure service discovery is set up
         builder.Services.AddNSerfServiceDiscovery();
-        
-        // Register the tag-based config provider
         builder.Services.AddSingleton<IProxyConfigProvider>(sp =>
         {
             var registry = sp.GetRequiredService<IServiceRegistry>();
