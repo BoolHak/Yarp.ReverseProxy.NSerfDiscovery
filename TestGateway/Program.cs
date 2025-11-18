@@ -13,13 +13,13 @@ builder.Services.AddNSerf(options =>
     options.BindAddr = "0.0.0.0:7946";
     options.Tags["role"] = "gateway";
     options.Profile = "lan";
+
+    if (string.IsNullOrEmpty(seedNode)) return;
     
-    if (!string.IsNullOrEmpty(seedNode))
-    {
-        options.RetryJoin = new[] { seedNode };
-        options.RetryInterval = TimeSpan.FromSeconds(2);
-        options.RetryMaxAttempts = 30;
-    }
+    options.StartJoin = [seedNode];
+    options.RetryJoin = [seedNode];
+    options.RetryInterval = TimeSpan.FromSeconds(2);
+    options.RetryMaxAttempts = 30;
 });
 
 // Configure YARP with tag-based NSerf discovery (includes service discovery setup)

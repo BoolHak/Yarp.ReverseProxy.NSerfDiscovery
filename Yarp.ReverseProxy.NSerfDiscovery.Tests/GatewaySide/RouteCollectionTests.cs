@@ -1,8 +1,11 @@
 using System.Reflection;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSerf.ServiceDiscovery;
 using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.NSerfDiscovery.GatewaySide;
 using Yarp.ReverseProxy.NSerfDiscovery.Models;
+using Moq;
 
 namespace Yarp.ReverseProxy.NSerfDiscovery.Tests.GatewaySide;
 
@@ -44,11 +47,15 @@ public class RouteCollectionTests
 
         collectRoutes!.Invoke(null, new object?[] { yarpConfig, routesDict });
 
+        // Create an instance to call the instance method
+        var mockRegistry = new Mock<IServiceRegistry>();
+        var provider = new NSerfTagBasedConfigProvider(mockRegistry.Object, NullLogger<NSerfTagBasedConfigProvider>.Instance);
+        
         var convertRoutes = typeof(NSerfTagBasedConfigProvider)
-            .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Static);
+            .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Instance);
         convertRoutes.Should().NotBeNull();
 
-        var result = (List<RouteConfig>?)convertRoutes!.Invoke(null, new object?[] { routesDict });
+        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, new object?[] { routesDict });
 
         result.Should().NotBeNull();
         result!.Should().HaveCount(3);
@@ -95,11 +102,15 @@ public class RouteCollectionTests
         collectRoutes!.Invoke(null, new object?[] { config1, routesDict });
         collectRoutes.Invoke(null, new object?[] { config2, routesDict });
 
+        // Create an instance to call the instance method
+        var mockRegistry = new Mock<IServiceRegistry>();
+        var provider = new NSerfTagBasedConfigProvider(mockRegistry.Object, NullLogger<NSerfTagBasedConfigProvider>.Instance);
+        
         var convertRoutes = typeof(NSerfTagBasedConfigProvider)
-            .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Static);
+            .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Instance);
         convertRoutes.Should().NotBeNull();
 
-        var result = (List<RouteConfig>?)convertRoutes!.Invoke(null, new object?[] { routesDict });
+        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, new object?[] { routesDict });
 
         result.Should().NotBeNull();
         result!.Should().HaveCount(1);
@@ -123,11 +134,15 @@ public class RouteCollectionTests
 
         collectRoutes!.Invoke(null, new object?[] { yarpConfig, routesDict });
 
+        // Create an instance to call the instance method
+        var mockRegistry = new Mock<IServiceRegistry>();
+        var provider = new NSerfTagBasedConfigProvider(mockRegistry.Object, NullLogger<NSerfTagBasedConfigProvider>.Instance);
+        
         var convertRoutes = typeof(NSerfTagBasedConfigProvider)
-            .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Static);
+            .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Instance);
         convertRoutes.Should().NotBeNull();
 
-        var result = (List<RouteConfig>?)convertRoutes!.Invoke(null, new object?[] { routesDict });
+        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, new object?[] { routesDict });
 
         result.Should().NotBeNull();
         result!.Should().BeEmpty();

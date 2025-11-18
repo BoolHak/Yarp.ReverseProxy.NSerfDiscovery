@@ -203,53 +203,134 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
 
     /// <summary>
     /// Converts the collected route definitions into concrete <see cref="RouteConfig"/>
-    /// instances that YARP can consume.
+    /// instances that YARP can consume. Invalid routes and duplicate match criteria are skipped with a warning.
     /// </summary>
     /// <param name="routesByCluster">The map of route IDs to route definitions.</param>
     /// <returns>A list of <see cref="RouteConfig"/> objects ready for YARP.</returns>
-    private static List<RouteConfig> ConvertRoutesByClusterToActualRouteConfigList(Dictionary<string, RouteFromTag> routesByCluster)
+    private List<RouteConfig> ConvertRoutesByClusterToActualRouteConfigList(Dictionary<string, RouteFromTag> routesByCluster)
     {
-        var routes = routesByCluster.Select(kvp => new RouteConfig
+        var routes = new List<RouteConfig>();
+        var seenMatchCriteria = new HashSet<string>();
+        
+        foreach (var kvp in routesByCluster)
         {
-            RouteId = kvp.Value.RouteId,
-            ClusterId = kvp.Value.ClusterId,
-            Order = kvp.Value.Order,
-            Match = new RouteMatch
+            try
             {
-                Path = kvp.Value.Match?.Path,
-                Hosts = kvp.Value.Match?.Hosts,
-                Headers = kvp.Value.Match?.Headers?.Select(h => new RouteHeader
+                // Basic validation before conversion
+                if (string.IsNullOrWhiteSpace(kvp.Value.RouteId))
                 {
-                    Name = h.Name,
-                    Values = h.Values,
-                    Mode = h.Mode switch
-                    {
-                        "ExactHeader" => HeaderMatchMode.ExactHeader,
-                        "HeaderPrefix" => HeaderMatchMode.HeaderPrefix,
-                        "Exists" => HeaderMatchMode.Exists,
-                        _ => HeaderMatchMode.ExactHeader
-                    }
-                }).ToList(),
-                QueryParameters = kvp.Value.Match?.QueryParameters?.Select(q => new RouteQueryParameter
+                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route with empty RouteId");
+                    continue;
+                }
+                
+                if (string.IsNullOrWhiteSpace(kvp.Value.ClusterId))
                 {
-                    Name = q.Name,
-                    Values = q.Values,
-                    Mode = q.Mode switch
+                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route {RouteId} with empty ClusterId", kvp.Value.RouteId);
+                    continue;
+                }
+                
+                var path = kvp.Value.Match?.Path;
+                if (ValidateRoutePathPattern(path))
+                {
+                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route {RouteId} with invalid path pattern: {Path}", 
+                        kvp.Value.RouteId, path);
+                    continue;
+                }
+                
+                var matchSignature = CreateRouteSignature(kvp, path);
+                
+                if (!seenMatchCriteria.Add(matchSignature))
+                {
+                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping duplicate route {RouteId} with identical match criteria to a previous route", 
+                        kvp.Value.RouteId);
+                    continue;
+                }
+                
+                var routeConfig = new RouteConfig
+                {
+                    RouteId = kvp.Value.RouteId,
+                    ClusterId = kvp.Value.ClusterId,
+                    Order = kvp.Value.Order,
+                    Match = new RouteMatch
                     {
-                        "Exact" => QueryParameterMatchMode.Exact,
-                        "Prefix" => QueryParameterMatchMode.Prefix,
-                        "Exists" => QueryParameterMatchMode.Exists,
-                        _ => QueryParameterMatchMode.Exact
-                    }
-                }).ToList()
-            },
-            
-            
-            Transforms = kvp.Value.Transforms?.Select(IReadOnlyDictionary<string, string> (t) => 
-                new Dictionary<string, string>(t)
-            ).ToList()
-        }).ToList();
+                        Path = kvp.Value.Match?.Path,
+                        Hosts = kvp.Value.Match?.Hosts,
+                        Headers = kvp.Value.Match?.Headers?.Select(h => new RouteHeader
+                        {
+                            Name = h.Name,
+                            Values = h.Values,
+                            Mode = h.Mode switch
+                            {
+                                "ExactHeader" => HeaderMatchMode.ExactHeader,
+                                "HeaderPrefix" => HeaderMatchMode.HeaderPrefix,
+                                "Exists" => HeaderMatchMode.Exists,
+                                _ => HeaderMatchMode.ExactHeader
+                            }
+                        }).ToList(),
+                        QueryParameters = kvp.Value.Match?.QueryParameters?.Select(q => new RouteQueryParameter
+                        {
+                            Name = q.Name,
+                            Values = q.Values,
+                            Mode = q.Mode switch
+                            {
+                                "Exact" => QueryParameterMatchMode.Exact,
+                                "Prefix" => QueryParameterMatchMode.Prefix,
+                                "Exists" => QueryParameterMatchMode.Exists,
+                                _ => QueryParameterMatchMode.Exact
+                            }
+                        }).ToList()
+                    },
+                    
+                    
+                    Transforms = kvp.Value.Transforms?.Select(IReadOnlyDictionary<string, string> (t) => 
+                        new Dictionary<string, string>(t)
+                    ).ToList()
+                };
+                
+                routes.Add(routeConfig);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, 
+                    "[NSerfTagBasedConfigProvider] Skipping invalid route {RouteId} during conversion", 
+                    kvp.Value.RouteId);
+            }
+        }
+        
         return routes;
+    }
+
+    /// <summary>
+    /// Detects obviously invalid route path patterns which would cause YARP to reject the route.
+    /// Currently, it catches unbalanced bracket expressions like "[foo" which fail regex parsing.
+    /// </summary>
+    /// <param name="path">Route path template to validate.</param>
+    /// <returns><c>true</c> when the path pattern is invalid and should be skipped; otherwise <c>false</c>.</returns>
+    private static bool ValidateRoutePathPattern(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        return path.Contains('[') && !path.Contains(']');
+    }
+
+    /// <summary>
+    /// Builds a signature string that uniquely identifies a route's match criteria
+    /// (path, hosts, headers, query parameters) so duplicates can be detected.
+    /// </summary>
+    /// <param name="kvp">Key/value pair containing the route ID and definition.</param>
+    /// <param name="path">Normalized path value extracted from the route.</param>
+    /// <returns>A string containing the concatenated match criteria used for duplicate detection.</returns>
+    private static string CreateRouteSignature(KeyValuePair<string, RouteFromTag> kvp, string? path)
+    {
+        var hosts = string.Join(",", kvp.Value.Match?.Hosts ?? []);
+        var headers = kvp.Value.Match?.Headers != null 
+            ? string.Join(";", kvp.Value.Match.Headers.Select(h => $"{h.Name}={string.Join(",", h.Values ?? [])}"))
+            : "";
+        var queryParams = kvp.Value.Match?.QueryParameters != null
+            ? string.Join(";", kvp.Value.Match.QueryParameters.Select(q => $"{q.Name}={string.Join(",", q.Values ?? [])}"))
+            : "";
+                
+        var matchSignature = $"{path}|{hosts}|{headers}|{queryParams}";
+        return matchSignature;
     }
 
     /// <summary>

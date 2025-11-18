@@ -17,7 +17,7 @@ public sealed class NSerfYarpExportOptions
     /// Logical service name. Must be unique across all services.
     /// REQUIRED.
     /// </summary>
-    public string? ServiceName { get; set; } = null!;
+    public string? ServiceName { get; set; }
 
     /// <summary>
     /// Instance identifier. If not specified, defaults to NSerf node name.

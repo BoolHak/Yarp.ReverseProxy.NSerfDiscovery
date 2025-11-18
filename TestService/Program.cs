@@ -28,11 +28,13 @@ builder.Services.AddNSerf(options =>
     options.Tags[$"scheme:{serviceName}"] = "http";
     options.Tags["yarp:config"] = yarpConfigTag; // Store YARP config in tags
     options.Profile = "lan";
+
+    if (string.IsNullOrEmpty(seedNode)) return;
     
-    if (!string.IsNullOrEmpty(seedNode))
-    {
-        options.StartJoin = [seedNode];
-    }
+    options.StartJoin = [seedNode];
+    options.RetryJoin = [seedNode];
+    options.RetryInterval = TimeSpan.FromSeconds(2);
+    options.RetryMaxAttempts = 30;
 });
 
 var app = builder.Build();
