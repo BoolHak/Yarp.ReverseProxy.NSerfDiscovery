@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: TestGateway/Dockerfile
+    image: test-gateway:latest
+    environment:
+      SERF_NODE_NAME: gateway
+      SERF_JOIN: "service1:7946"
+    ports:
+      - "8080:8080"
+
+  service1:
+    build:
+      context: .
+      dockerfile: TestService/Dockerfile
+    image: test-service:latest
+    environment:
+      SERVICE_NAME: orders-api
+      INSTANCE_ID: orders-api-1
+      SERVICE_PORT: "8080"
+      SERF_NODE_NAME: orders-api-1
+    ports:
+      - "8101:8080"
+
+  service2:
+    build:
+      context: .
+      dockerfile: TestService/Dockerfile
+    image: test-service:latest
+    environment:
+      SERVICE_NAME: orders-api
+      INSTANCE_ID: orders-api-2
+      SERVICE_PORT: "8080"
+      SERF_NODE_NAME: orders-api-2
+      SERF_JOIN: "service1:7946"
+    ports:
+      - "8102:8080"

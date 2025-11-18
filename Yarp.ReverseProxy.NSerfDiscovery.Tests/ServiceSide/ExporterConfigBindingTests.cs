@@ -87,7 +87,7 @@ public class ExporterConfigBindingTests
         options.Routes["api-route"].Match.Hosts.Should().Contain("api.example.com");
         options.Routes["api-route"].Match.Headers.Should().HaveCount(1);
         options.Routes["api-route"].Match.Headers![0].Name.Should().Be("X-Tenant");
-        options.Routes["api-route"].Match.Headers[0].Values.Should().Contain("tenant-a");
+        options.Routes["api-route"].Match.Headers![0].Values.Should().Contain("tenant-a");
         options.Routes["api-route"].Match.QueryParameters.Should().HaveCount(1);
         options.Routes["api-route"].Match.QueryParameters![0].Name.Should().Be("version");
     }

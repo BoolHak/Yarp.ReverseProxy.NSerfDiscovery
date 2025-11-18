@@ -1,13 +1,13 @@
-﻿namespace Yarp.ReverseProxy.NSerfDiscovery.GatewaySide;
+﻿namespace Yarp.ReverseProxy.NSerfDiscovery.Models;
 
-public partial class NSerfTagBasedConfigProvider
+/// <summary>
+/// Represents a YARP route definition parsed from NSerf member tags.
+/// </summary>
+public class RouteFromTag
 {
-    public class RouteFromTag
-    {
-        public string RouteId { get; set; } = "";
-        public string ClusterId { get; set; } = "";
-        public int? Order { get; set; }
-        public MatchFromTag? Match { get; set; }
-        public List<Dictionary<string, string>>? Transforms { get; set; }
-    }
+    public string RouteId { get; set; } = "";
+    public string ClusterId { get; set; } = "";
+    public int? Order { get; set; }
+    public MatchFromTag? Match { get; set; }
+    public List<Dictionary<string, string>>? Transforms { get; set; }
 }

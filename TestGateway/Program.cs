@@ -16,7 +16,9 @@ builder.Services.AddNSerf(options =>
     
     if (!string.IsNullOrEmpty(seedNode))
     {
-        options.StartJoin = [seedNode];
+        options.RetryJoin = new[] { seedNode };
+        options.RetryInterval = TimeSpan.FromSeconds(2);
+        options.RetryMaxAttempts = 30;
     }
 });
 

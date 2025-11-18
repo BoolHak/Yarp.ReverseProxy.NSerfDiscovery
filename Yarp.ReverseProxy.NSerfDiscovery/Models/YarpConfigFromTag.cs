@@ -1,10 +1,10 @@
-﻿namespace Yarp.ReverseProxy.NSerfDiscovery.GatewaySide;
+﻿ namespace Yarp.ReverseProxy.NSerfDiscovery.Models;
 
-public partial class NSerfTagBasedConfigProvider
+ /// <summary>
+ /// Root object representing the YARP configuration payload stored in NSerf member tags.
+ /// </summary>
+ public class YarpConfigFromTag
 {
-    public class YarpConfigFromTag
-    {
-        public RouteFromTag[]? Routes { get; set; }
-        public ClusterFromTag[]? Clusters { get; set; }
-    }
+    public RouteFromTag[]? Routes { get; set; }
+    public ClusterFromTag[]? Clusters { get; set; }
 }

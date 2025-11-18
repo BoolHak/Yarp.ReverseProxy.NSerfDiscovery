@@ -109,7 +109,7 @@ public class ExportDtoSerializationTests
         deserialized.Routes[0].Match.Hosts.Should().Contain("api.example.com");
         deserialized.Routes[0].Match.Headers.Should().HaveCount(1);
         deserialized.Routes[0].Match.Headers![0].Name.Should().Be("X-Tenant");
-        deserialized.Routes[0].Match.Headers[0].Values.Should().Contain("tenant-a", "tenant-b");
+        deserialized.Routes[0].Match.Headers![0].Values.Should().Contain("tenant-a", "tenant-b");
         deserialized.Routes[0].Match.QueryParameters.Should().HaveCount(1);
         deserialized.Routes[0].Match.QueryParameters![0].Name.Should().Be("version");
         deserialized.Routes[0].Transforms.Should().HaveCount(2);
@@ -119,8 +119,8 @@ public class ExportDtoSerializationTests
         deserialized.Clusters[0].LoadBalancingPolicy.Should().Be("PowerOfTwoChoices");
         deserialized.Clusters[0].HealthCheck.Should().NotBeNull();
         deserialized.Clusters[0].HealthCheck!.Active.Should().NotBeNull();
-        deserialized.Clusters[0].HealthCheck.Active!.Enabled.Should().BeTrue();
-        deserialized.Clusters[0].HealthCheck.Active.Path.Should().Be("/health");
+        deserialized.Clusters[0].HealthCheck!.Active!.Enabled.Should().BeTrue();
+        deserialized.Clusters[0].HealthCheck!.Active!.Path.Should().Be("/health");
     }
 
     [Fact]

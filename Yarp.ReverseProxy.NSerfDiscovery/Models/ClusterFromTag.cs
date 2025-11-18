@@ -1,13 +1,13 @@
-﻿namespace Yarp.ReverseProxy.NSerfDiscovery.GatewaySide;
+﻿ namespace Yarp.ReverseProxy.NSerfDiscovery.Models;
 
-public partial class NSerfTagBasedConfigProvider
+ /// <summary>
+ /// Represents a cluster definition parsed from NSerf YARP tags.
+ /// </summary>
+ public class ClusterFromTag
 {
-    public class ClusterFromTag
-    {
-        public string ClusterId { get; set; } = "";
-        public string LoadBalancingPolicy { get; set; } = "RoundRobin";
-        public SessionAffinityFromTag? SessionAffinity { get; set; }
-        public HealthCheckFromTag? HealthCheck { get; set; }
-        public Dictionary<string, string>? Metadata { get; set; }
-    }
+    public string ClusterId { get; set; } = "";
+    public string LoadBalancingPolicy { get; set; } = "RoundRobin";
+    public SessionAffinityFromTag? SessionAffinity { get; set; }
+    public HealthCheckFromTag? HealthCheck { get; set; }
+    public Dictionary<string, string>? Metadata { get; set; }
 }

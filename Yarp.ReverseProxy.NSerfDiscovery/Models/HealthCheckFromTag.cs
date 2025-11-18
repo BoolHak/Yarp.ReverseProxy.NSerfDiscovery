@@ -1,10 +1,10 @@
-﻿namespace Yarp.ReverseProxy.NSerfDiscovery.GatewaySide;
+﻿ namespace Yarp.ReverseProxy.NSerfDiscovery.Models;
 
-public partial class NSerfTagBasedConfigProvider
+ /// <summary>
+ /// Represents combined active and passive health check configuration parsed from NSerf YARP tags.
+ /// </summary>
+ public class HealthCheckFromTag
 {
-    public class HealthCheckFromTag
-    {
-        public ActiveHealthCheckFromTag? Active { get; set; }
-        public PassiveHealthCheckFromTag? Passive { get; set; }
-    }
+    public ActiveHealthCheckFromTag? Active { get; set; }
+    public PassiveHealthCheckFromTag? Passive { get; set; }
 }
