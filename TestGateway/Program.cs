@@ -44,7 +44,7 @@ app.MapGet("/debug/yarp-config", (Yarp.ReverseProxy.Configuration.IProxyConfigPr
     { 
         routes = config.Routes,
         clusters = config.Clusters,
-        changeToken = config.ChangeToken?.ToString()
+        changeToken = config.ChangeToken.ToString()
     });
 });
 

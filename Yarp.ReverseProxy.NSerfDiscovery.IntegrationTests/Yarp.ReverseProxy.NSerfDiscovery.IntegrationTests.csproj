@@ -26,4 +26,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <Target Name="EnsureDockerImagesForIntegrationTests" BeforeTargets="Test">
+    <Exec Command="bash build-images.sh" WorkingDirectory="$(MSBuildThisFileDirectory)..\" />
+  </Target>
+
 </Project>

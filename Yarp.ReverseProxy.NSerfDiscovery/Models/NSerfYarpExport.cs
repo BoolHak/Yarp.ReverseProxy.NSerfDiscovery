@@ -31,11 +31,11 @@ public sealed class NSerfYarpExport
     /// YARP route configurations exported by this service.
     /// Routes define how incoming requests are matched and routed to clusters.
     /// </summary>
-    public IReadOnlyList<RouteConfig> Routes { get; init; } = Array.Empty<RouteConfig>();
+    public IReadOnlyList<RouteConfig> Routes { get; init; } = [];
 
     /// <summary>
     /// YARP cluster configurations exported by this service.
     /// Clusters define backend destinations and load balancing policies.
     /// </summary>
-    public IReadOnlyList<ClusterConfig> Clusters { get; init; } = Array.Empty<ClusterConfig>();
+    public IReadOnlyList<ClusterConfig> Clusters { get; init; } = [];
 }

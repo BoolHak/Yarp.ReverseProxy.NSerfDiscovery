@@ -26,7 +26,7 @@ public static class NSerfYarpTagExporter
     }
 
     /// <summary>
-    /// Builds YARP config tag from configuration section.
+    /// Builds YARP config tag from a configuration section.
     /// </summary>
     public static string BuildYarpConfigTag(IConfiguration configuration, string sectionName = "ReverseProxyExport")
     {

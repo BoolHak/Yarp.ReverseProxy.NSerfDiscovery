@@ -1,10 +1,9 @@
 using NSerf.Extensions;
-using System.Text.Json;
 using Yarp.ReverseProxy.NSerfDiscovery.ServiceSide;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Get service configuration from environment
+// Get service configuration from the environment
 var serviceName = Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "test-service";
 var instanceId = Environment.GetEnvironmentVariable("INSTANCE_ID") ?? $"{serviceName}-{Guid.NewGuid():N}";
 var servicePort = int.Parse(Environment.GetEnvironmentVariable("SERVICE_PORT") ?? "8080");
@@ -12,18 +11,11 @@ var seedNode = Environment.GetEnvironmentVariable("SERF_JOIN");
 
 // Check if custom YARP config is provided via environment variable
 var customYarpConfig = Environment.GetEnvironmentVariable("YARP_CONFIG_JSON");
-string yarpConfigTag;
 
-if (!string.IsNullOrEmpty(customYarpConfig))
-{
+var yarpConfigTag =
     // Use custom config from environment variable
-    yarpConfigTag = customYarpConfig;
-}
-else
-{
-    // Build YARP config tag using the library from appsettings.json
-    yarpConfigTag = NSerfYarpTagExporter.BuildYarpConfigTag(builder.Configuration, "ReverseProxyExport");
-}
+    !string.IsNullOrEmpty(customYarpConfig) ? customYarpConfig :
+    NSerfYarpTagExporter.BuildYarpConfigTag(builder.Configuration, "ReverseProxyExport");
 
 // Configure NSerf with service discovery tags + YARP config
 builder.Services.AddNSerf(options =>
@@ -64,18 +56,9 @@ app.MapGet("/api/data", (HttpContext context) => Results.Ok(new
     timestamp = DateTime.UtcNow
 }));
 
-// Health check endpoint - returns status based on health flag
-app.MapGet("/health", () => 
-{
-    if (isHealthy)
-    {
-        return Results.Ok(new { status = "healthy", instance = instanceId });
-    }
-    else
-    {
-        return Results.StatusCode(503); // Service Unavailable
-    }
-});
+// Health check endpoint - returns status based on a health flag
+app.MapGet("/health", () => isHealthy ? 
+    Results.Ok(new { status = "healthy", instance = instanceId }) : Results.StatusCode(503));
 
 // Admin endpoint to toggle health status
 app.MapPost("/admin/health/fail", () => 
@@ -91,9 +74,7 @@ app.MapPost("/admin/health/recover", () =>
 });
 
 app.MapGet("/admin/health/status", () => 
-{
-    return Results.Ok(new { isHealthy, instance = instanceId });
-});
+    Results.Ok(new { isHealthy, instance = instanceId }));
 
 // Catch-all endpoint to capture any path
 app.MapFallback((HttpContext context) => Results.Ok(new 

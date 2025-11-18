@@ -6,23 +6,17 @@ namespace Yarp.ReverseProxy.NSerfDiscovery.Internal;
 /// <summary>
 /// Implementation of IProxyConfig that wraps the merged global configuration.
 /// </summary>
-internal sealed class NSerfProxyConfig : IProxyConfig
+internal sealed class NSerfProxyConfig(
+    IReadOnlyList<RouteConfig> routes,
+    IReadOnlyList<ClusterConfig> clusters,
+    IChangeToken changeToken)
+    : IProxyConfig
 {
-    public NSerfProxyConfig(
-        IReadOnlyList<RouteConfig> routes,
-        IReadOnlyList<ClusterConfig> clusters,
-        IChangeToken changeToken)
-    {
-        Routes = routes ?? throw new ArgumentNullException(nameof(routes));
-        Clusters = clusters ?? throw new ArgumentNullException(nameof(clusters));
-        ChangeToken = changeToken ?? throw new ArgumentNullException(nameof(changeToken));
-    }
+    public IReadOnlyList<RouteConfig> Routes { get; } = routes ?? throw new ArgumentNullException(nameof(routes));
 
-    public IReadOnlyList<RouteConfig> Routes { get; }
+    public IReadOnlyList<ClusterConfig> Clusters { get; } = clusters ?? throw new ArgumentNullException(nameof(clusters));
 
-    public IReadOnlyList<ClusterConfig> Clusters { get; }
-
-    public IChangeToken ChangeToken { get; }
+    public IChangeToken ChangeToken { get; } = changeToken ?? throw new ArgumentNullException(nameof(changeToken));
 }
 
 /// <summary>
