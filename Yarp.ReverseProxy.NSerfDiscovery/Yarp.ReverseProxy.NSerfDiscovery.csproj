@@ -5,13 +5,34 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
+        
+        <!-- NuGet Package Metadata -->
+        <PackageId>NSerfDiscovery.Yarp</PackageId>
+        <Version>0.1.5-beta</Version>
+        <Authors>BoolHak</Authors>
+        <Description>A dynamic service discovery plugin that connects NSerf with YARP reverse proxy. Services automatically advertise their routing configuration via NSerf gossip protocol, and the gateway dynamically builds its routing table without manual configuration.</Description>
+        <PackageTags>yarp;reverse-proxy;service-discovery;nserf;serf;gossip;microservices;load-balancing</PackageTags>
+        <PackageProjectUrl>https://github.com/BoolHak/Yarp.ReverseProxy.NSerfDiscovery</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/BoolHak/Yarp.ReverseProxy.NSerfDiscovery</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     </PropertyGroup>
+    
+    <ItemGroup>
+        <None Include="icon.png" Pack="true" PackagePath="\" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 
     <ItemGroup>
         <InternalsVisibleTo Include="Yarp.ReverseProxy.NSerfDiscovery.Tests" />
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="System.Net.Http" Version="4.3.4" />
+        <PackageReference Include="System.Text.Json" Version="8.0.6" />
         <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
