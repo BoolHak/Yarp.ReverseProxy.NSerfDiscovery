@@ -155,3 +155,69 @@ builder.Services.AddNSerfService(builder.Configuration, options =>
                       │  HTTP Requests  │
                       └─────────────────┘
 ```
+
+## Docker Compose Example
+
+Here's a complete example using Docker Compose to run a gateway with two service instances:
+
+```yaml
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: TestGateway/Dockerfile
+    environment:
+      SERF_NODE_NAME: gateway
+      SERF_JOIN: "service1:7946"
+    ports:
+      - "8080:8080"
+
+  service1:
+    build:
+      context: .
+      dockerfile: TestService/Dockerfile
+    environment:
+      SERVICE_NAME: orders-api
+      INSTANCE_ID: orders-api-1
+      SERVICE_PORT: "8080"
+      SERF_NODE_NAME: orders-api-1
+    ports:
+      - "8101:8080"
+
+  service2:
+    build:
+      context: .
+      dockerfile: TestService/Dockerfile
+    environment:
+      SERVICE_NAME: orders-api
+      INSTANCE_ID: orders-api-2
+      SERVICE_PORT: "8080"
+      SERF_NODE_NAME: orders-api-2
+      SERF_JOIN: "service1:7946"
+    ports:
+      - "8102:8080"
+```
+
+Run the stack:
+
+```bash
+docker compose up --build
+```
+
+Test the gateway (requests will be load-balanced across both service instances):
+
+```bash
+# Via gateway (load balanced)
+curl http://localhost:8080/api/orders
+
+# Direct to service1
+curl http://localhost:8101/api/orders
+
+# Direct to service2
+curl http://localhost:8102/api/orders
+
+# View gateway's YARP configuration
+curl http://localhost:8080/debug/yarp-config
+```
