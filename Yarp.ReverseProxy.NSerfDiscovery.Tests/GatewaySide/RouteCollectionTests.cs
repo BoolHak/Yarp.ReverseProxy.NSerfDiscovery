@@ -16,8 +16,8 @@ public class RouteCollectionTests
     {
         var yarpConfig = new YarpConfigFromTag
         {
-            Routes = new[]
-            {
+            Routes =
+            [
                 new RouteFromTag
                 {
                     RouteId = "route-1",
@@ -36,7 +36,7 @@ public class RouteCollectionTests
                     ClusterId = "cluster-a",
                     Match = new MatchFromTag { Path = "/c/{**catch-all}" }
                 }
-            }
+            ]
         };
 
         var routesDict = new Dictionary<string, RouteFromTag>();
@@ -50,7 +50,7 @@ public class RouteCollectionTests
         // Create an instance to call the instance method
         var mockRegistry = new Mock<IServiceRegistry>();
         var provider = new NSerfTagBasedConfigProvider(mockRegistry.Object, NullLogger<NSerfTagBasedConfigProvider>.Instance);
-        
+
         var convertRoutes = typeof(NSerfTagBasedConfigProvider)
             .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Instance);
         convertRoutes.Should().NotBeNull();
@@ -59,9 +59,9 @@ public class RouteCollectionTests
 
         result.Should().NotBeNull();
         result!.Should().HaveCount(3);
-        result.Select(r => r.RouteId).Should().BeEquivalentTo("route-1", "route-2", "route-3");
-        result.Select(r => r.ClusterId).Distinct().Should().ContainSingle().Which.Should().Be("cluster-a");
-        result.Select(r => r.Match.Path).Should().BeEquivalentTo("/a/{**catch-all}", "/b/{**catch-all}", "/c/{**catch-all}");
+        result!.Select(r => r.RouteId).Should().BeEquivalentTo("route-1", "route-2", "route-3");
+        result!.Select(r => r.ClusterId).Distinct().Should().ContainSingle().Which.Should().Be("cluster-a");
+        result!.Select(r => r.Match.Path).Should().BeEquivalentTo("/a/{**catch-all}", "/b/{**catch-all}", "/c/{**catch-all}");
     }
 
     [Fact]
@@ -69,15 +69,15 @@ public class RouteCollectionTests
     {
         var config1 = new YarpConfigFromTag
         {
-            Routes = new[]
-            {
+            Routes =
+            [
                 new RouteFromTag
                 {
                     RouteId = "duplicate-route",
                     ClusterId = "cluster-a",
                     Match = new MatchFromTag { Path = "/first/{**catch-all}" }
                 }
-            }
+            ]
         };
 
         var config2 = new YarpConfigFromTag
@@ -99,22 +99,22 @@ public class RouteCollectionTests
             .GetMethod("CollectRoutes", BindingFlags.NonPublic | BindingFlags.Static);
         collectRoutes.Should().NotBeNull();
 
-        collectRoutes!.Invoke(null, new object?[] { config1, routesDict });
-        collectRoutes.Invoke(null, new object?[] { config2, routesDict });
+        collectRoutes!.Invoke(null, [config1, routesDict]);
+        collectRoutes.Invoke(null, [config2, routesDict]);
 
         // Create an instance to call the instance method
         var mockRegistry = new Mock<IServiceRegistry>();
         var provider = new NSerfTagBasedConfigProvider(mockRegistry.Object, NullLogger<NSerfTagBasedConfigProvider>.Instance);
-        
+
         var convertRoutes = typeof(NSerfTagBasedConfigProvider)
             .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Instance);
         convertRoutes.Should().NotBeNull();
 
-        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, new object?[] { routesDict });
+        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, [routesDict]);
 
         result.Should().NotBeNull();
         result!.Should().HaveCount(1);
-        result[0].RouteId.Should().Be("duplicate-route");
+        result![0].RouteId.Should().Be("duplicate-route");
         result[0].Match.Path.Should().Be("/second/{**catch-all}");
     }
 
@@ -132,17 +132,17 @@ public class RouteCollectionTests
             .GetMethod("CollectRoutes", BindingFlags.NonPublic | BindingFlags.Static);
         collectRoutes.Should().NotBeNull();
 
-        collectRoutes!.Invoke(null, new object?[] { yarpConfig, routesDict });
+        collectRoutes!.Invoke(null, [yarpConfig, routesDict]);
 
         // Create an instance to call the instance method
         var mockRegistry = new Mock<IServiceRegistry>();
         var provider = new NSerfTagBasedConfigProvider(mockRegistry.Object, NullLogger<NSerfTagBasedConfigProvider>.Instance);
-        
+
         var convertRoutes = typeof(NSerfTagBasedConfigProvider)
             .GetMethod("ConvertRoutesByClusterToActualRouteConfigList", BindingFlags.NonPublic | BindingFlags.Instance);
         convertRoutes.Should().NotBeNull();
 
-        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, new object?[] { routesDict });
+        var result = (List<RouteConfig>?)convertRoutes!.Invoke(provider, [routesDict]);
 
         result.Should().NotBeNull();
         result!.Should().BeEmpty();

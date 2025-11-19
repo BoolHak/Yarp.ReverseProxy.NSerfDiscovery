@@ -42,7 +42,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     /// <returns>The current <see cref="IProxyConfig"/> instance used by YARP.</returns>
     public IProxyConfig GetConfig()
     {
-        _logger.LogDebug("[NSerfTagBasedConfigProvider] GetConfig called, returning config with {RouteCount} routes, {ClusterCount} clusters", 
+        _logger.LogDebug("[NSerfTagBasedConfigProvider] GetConfig called, returning config with {RouteCount} routes, {ClusterCount} clusters",
             _config.Routes.Count, _config.Clusters.Count);
         return _config;
     }
@@ -53,7 +53,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     /// </summary>
     private void OnServiceChanged(object? sender, ServiceChangedEventArgs e)
     {
-        _logger.LogInformation("[NSerfTagBasedConfigProvider] Service changed: {ServiceName} - {ChangeType}", 
+        _logger.LogInformation("[NSerfTagBasedConfigProvider] Service changed: {ServiceName} - {ChangeType}",
             e.ServiceName, e.ChangeType);
         _ = Task.Run(BuildConfigAsync);
     }
@@ -70,16 +70,16 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
             var clusters = new Dictionary<string, ClusterConfig>();
 
             var services = _serviceRegistry.GetServices();
-            
+
             _logger.LogInformation("[NSerfTagBasedConfigProvider] Building YARP config from {Count} services", services.Count);
 
             foreach (var service in services)
             {
                 foreach (var instance in service.Instances)
                 {
-                    
+
                     if (!instance.Metadata.TryGetValue(_yarpTagName, out var yarpConfigJson)) continue;
-                    
+
                     try
                     {
                         var yarpConfig = JsonSerializer.Deserialize<YarpConfigFromTag>(yarpConfigJson);
@@ -91,7 +91,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, 
+                        _logger.LogError(ex,
                             "[NSerfTagBasedConfigProvider] Failed to parse YARP config from instance {InstanceId}",
                             instance.Id);
                     }
@@ -99,7 +99,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
             }
 
             var routes = ConvertRoutesByClusterToActualRouteConfigList(routesByCluster);
-            _logger.LogInformation("[NSerfTagBasedConfigProvider] Built YARP config: {RouteCount} routes, {ClusterCount} clusters", 
+            _logger.LogInformation("[NSerfTagBasedConfigProvider] Built YARP config: {RouteCount} routes, {ClusterCount} clusters",
                 routes.Count, clusters.Count);
             CreateNewConfigAndTriggerChange(routes, clusters);
         }
@@ -107,7 +107,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
         {
             _logger.LogError(ex, "[NSerfTagBasedConfigProvider] Failed to build YARP config");
         }
-        
+
         return Task.CompletedTask;
     }
 
@@ -121,7 +121,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     private static void AddOrUpdateClusters(YarpConfigFromTag yarpConfig, Dictionary<string, ClusterConfig> clusters, ServiceInstance instance)
     {
         if (yarpConfig.Clusters == null) return;
-        
+
         foreach (var clusterDef in yarpConfig.Clusters)
         {
             if (!clusters.TryGetValue(clusterDef.ClusterId, out var existingCluster))
@@ -140,14 +140,9 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     private static void CollectRoutes(YarpConfigFromTag yarpConfig, Dictionary<string, RouteFromTag> routesByCluster)
     {
         if (yarpConfig.Routes == null) return;
-        
         foreach (var route in yarpConfig.Routes)
         {
-            if (string.IsNullOrWhiteSpace(route.RouteId))
-            {
-                continue;
-            }
-
+            if (string.IsNullOrWhiteSpace(route.RouteId)) continue;
             routesByCluster[route.RouteId] = route;
         }
     }
@@ -211,7 +206,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     {
         var routes = new List<RouteConfig>();
         var seenMatchCriteria = new HashSet<string>();
-        
+
         foreach (var kvp in routesByCluster)
         {
             try
@@ -222,30 +217,30 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
                     _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route with empty RouteId");
                     continue;
                 }
-                
+
                 if (string.IsNullOrWhiteSpace(kvp.Value.ClusterId))
                 {
                     _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route {RouteId} with empty ClusterId", kvp.Value.RouteId);
                     continue;
                 }
-                
+
                 var path = kvp.Value.Match?.Path;
                 if (ValidateRoutePathPattern(path))
                 {
-                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route {RouteId} with invalid path pattern: {Path}", 
+                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping route {RouteId} with invalid path pattern: {Path}",
                         kvp.Value.RouteId, path);
                     continue;
                 }
-                
+
                 var matchSignature = CreateRouteSignature(kvp, path);
-                
+
                 if (!seenMatchCriteria.Add(matchSignature))
                 {
-                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping duplicate route {RouteId} with identical match criteria to a previous route", 
+                    _logger.LogWarning("[NSerfTagBasedConfigProvider] Skipping duplicate route {RouteId} with identical match criteria to a previous route",
                         kvp.Value.RouteId);
                     continue;
                 }
-                
+
                 var routeConfig = new RouteConfig
                 {
                     RouteId = kvp.Value.RouteId,
@@ -280,23 +275,23 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
                             }
                         }).ToList()
                     },
-                    
-                    
-                    Transforms = kvp.Value.Transforms?.Select(IReadOnlyDictionary<string, string> (t) => 
+
+
+                    Transforms = kvp.Value.Transforms?.Select(IReadOnlyDictionary<string, string> (t) =>
                         new Dictionary<string, string>(t)
                     ).ToList()
                 };
-                
+
                 routes.Add(routeConfig);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, 
-                    "[NSerfTagBasedConfigProvider] Skipping invalid route {RouteId} during conversion", 
+                _logger.LogWarning(ex,
+                    "[NSerfTagBasedConfigProvider] Skipping invalid route {RouteId} during conversion",
                     kvp.Value.RouteId);
             }
         }
-        
+
         return routes;
     }
 
@@ -322,13 +317,13 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     private static string CreateRouteSignature(KeyValuePair<string, RouteFromTag> kvp, string? path)
     {
         var hosts = string.Join(",", kvp.Value.Match?.Hosts ?? []);
-        var headers = kvp.Value.Match?.Headers != null 
+        var headers = kvp.Value.Match?.Headers != null
             ? string.Join(";", kvp.Value.Match.Headers.Select(h => $"{h.Name}={string.Join(",", h.Values ?? [])}"))
             : "";
         var queryParams = kvp.Value.Match?.QueryParameters != null
             ? string.Join(";", kvp.Value.Match.QueryParameters.Select(q => $"{q.Name}={string.Join(",", q.Values ?? [])}"))
             : "";
-                
+
         var matchSignature = $"{path}|{hosts}|{headers}|{queryParams}";
         return matchSignature;
     }
@@ -343,10 +338,10 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     {
         var newConfig = new NSerfProxyConfig(routes, clusters.Values.ToList());
         var oldConfig = Interlocked.Exchange(ref _config, newConfig);
-            
-        _logger.LogInformation("[NSerfTagBasedConfigProvider] Signaling config change. Old config had {OldRoutes} routes, new config has {NewRoutes} routes", 
+
+        _logger.LogInformation("[NSerfTagBasedConfigProvider] Signaling config change. Old config had {OldRoutes} routes, new config has {NewRoutes} routes",
             oldConfig.Routes.Count, newConfig.Routes.Count);
-            
+
         oldConfig.SignalChange();
     }
 
@@ -360,7 +355,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     private static SessionAffinityConfig? ConvertSessionAffinity(SessionAffinityFromTag? source)
     {
         if (source?.AffinityKeyName == null) return null;
-        
+
         return new SessionAffinityConfig
         {
             Enabled = source.Enabled,
@@ -379,7 +374,7 @@ public class NSerfTagBasedConfigProvider : IProxyConfigProvider
     private static HealthCheckConfig? ConvertHealthCheck(HealthCheckFromTag? source)
     {
         if (source == null) return null;
-        
+
         return new HealthCheckConfig
         {
             Active = source.Active != null ? new ActiveHealthCheckConfig

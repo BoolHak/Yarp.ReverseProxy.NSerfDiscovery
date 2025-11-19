@@ -1,56 +1,44 @@
 # Yarp.ReverseProxy.NSerfDiscovery
 
-This plugin connects NSerf service discovery with YARP.
+A dynamic service discovery plugin that connects NSerf with YARP reverse proxy.
 
-It lets a gateway read its YARP routes and clusters from NSerf member tags.
-Services export their YARP config as JSON in a tag. The gateway reads these tags
-and builds its routing config at runtime.
+Services automatically advertise their routing configuration via NSerf gossip protocol, and the gateway dynamically builds its routing table without manual configuration.
 
 ## Requirements
 
 - .NET 8.0 or later
 - Yarp.ReverseProxy 2.1.0 or later
-- NSerf 0.1.5-beta or later
 
 ## How it works
 
-- On the **service** side, each service instance publishes a YARP config JSON
-  into a NSerf tag (by default `yarp:config`).
-- On the **gateway** side, the plugin reads these tags through `IServiceRegistry`
-  and builds YARP `RouteConfig` and `ClusterConfig` objects.
-- When NSerf reports changes, the plugin rebuilds the YARP config and signals
-  a change token so YARP reloads routing.
+- **Service side**: Each service instance publishes its YARP configuration as JSON in a NSerf tag (default: `yarp:config`).
+- **Gateway side**: The gateway reads these tags through NSerf's service discovery and dynamically builds YARP routes and clusters.
+- **Dynamic updates**: When services join/leave the cluster, the gateway automatically rebuilds its routing configuration.
 
-## Basic setup example
+## Gateway Setup
 
-This example shows a very small gateway that uses NSerf and this plugin.
+The gateway uses `AddNSerfGateway` to configure both NSerf and YARP in one call:
 
 ```csharp
-using NSerf.Extensions;
 using Yarp.ReverseProxy.NSerfDiscovery.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure NSerf for the gateway node
 var nodeName = Environment.GetEnvironmentVariable("SERF_NODE_NAME") ?? "gateway";
 var seedNode = Environment.GetEnvironmentVariable("SERF_JOIN");
 
-builder.Services.AddNSerf(options =>
-{
-    options.NodeName = nodeName;
-    options.BindAddr = "0.0.0.0:7946";
-    options.Tags["role"] = "gateway";
-
-    if (!string.IsNullOrEmpty(seedNode))
-    {
-        options.StartJoin = [seedNode];
-    }
-});
-
-// Configure YARP to load config from NSerf tags
+// Configure YARP with NSerf Gateway
 builder.Services
     .AddReverseProxy()
-    .LoadFromNSerfTags();
+    .AddNSerfGateway(options =>
+    {
+        options.NodeName = nodeName;
+        options.BindAddress = "0.0.0.0:7946";
+        if (!string.IsNullOrEmpty(seedNode))
+        {
+            options.SeedNodes = [seedNode];
+        }
+    });
 
 var app = builder.Build();
 
@@ -60,32 +48,32 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", node = nodeName
 await app.RunAsync();
 ```
 
-For services, use `NSerfYarpTagExporter` or your own code to build the YARP
-config JSON and store it in the `yarp:config` tag for each service instance.
+## Service Setup
 
-## Service example
-
-This example shows a simple service that exports its YARP config in a NSerf tag.
+Services use `AddNSerfService` to automatically advertise themselves and their YARP configuration:
 
 ```csharp
-using NSerf.Extensions;
-using Yarp.ReverseProxy.NSerfDiscovery.ServiceSide;
+using Yarp.ReverseProxy.NSerfDiscovery.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var serviceName = "orders-api";
-var instanceId = $"{serviceName}-{Guid.NewGuid():N}";
+var serviceName = Environment.GetEnvironmentVariable("SERVICE_NAME") ?? "orders-api";
+var instanceId = Environment.GetEnvironmentVariable("INSTANCE_ID") ?? $"{serviceName}-{Guid.NewGuid():N}";
+var servicePort = int.Parse(Environment.GetEnvironmentVariable("SERVICE_PORT") ?? "8080");
+var seedNode = Environment.GetEnvironmentVariable("SERF_JOIN");
 
-// Build YARP config tag from configuration (section "ReverseProxyExport")
-var yarpTag = NSerfYarpTagExporter.BuildYarpConfigTag(builder.Configuration, "ReverseProxyExport");
-
-builder.Services.AddNSerf(options =>
+// Configure NSerf Service with YARP config
+builder.Services.AddNSerfService(builder.Configuration, options =>
 {
-    options.NodeName = instanceId;
-    options.BindAddr = "0.0.0.0:7946";
-    options.Tags["role"] = "service";
-    options.Tags[$"service:{serviceName}"] = "true";
-    options.Tags["yarp:config"] = yarpTag;
+    options.ServiceName = serviceName;
+    options.Port = servicePort;
+    options.InstanceId = instanceId;
+    options.BindAddress = "0.0.0.0:7946";
+    
+    if (!string.IsNullOrEmpty(seedNode))
+    {
+        options.SeedNodes = [seedNode];
+    }
 });
 
 var app = builder.Build();
@@ -95,9 +83,9 @@ app.MapGet("/api/orders", () => Results.Ok(new { service = serviceName, instance
 await app.RunAsync();
 ```
 
-### Example appsettings.json
+## Service Configuration (appsettings.json)
 
-The service example expects a `ReverseProxyExport` section in configuration.
+Services define their YARP routes and clusters in the `ReverseProxyExport` section:
 
 ```json
 {
@@ -120,4 +108,50 @@ The service example expects a `ReverseProxyExport` section in configuration.
     }
   }
 }
+```
+
+## Advanced: Manual YARP Config
+
+You can also provide YARP configuration manually via environment variable:
+
+```csharp
+var customYarpConfig = Environment.GetEnvironmentVariable("YARP_CONFIG_JSON");
+
+builder.Services.AddNSerfService(builder.Configuration, options =>
+{
+    options.ServiceName = serviceName;
+    options.Port = servicePort;
+    options.YarpConfigJson = customYarpConfig; // Override appsettings.json
+    // ...
+});
+```
+
+## Features
+
+- **Zero-configuration service discovery**: Services automatically register and deregister
+- **Dynamic routing**: Gateway routing table updates in real-time as services scale
+- **Load balancing**: Multiple instances of the same service are automatically load-balanced
+- **Health checks**: Supports YARP's active and passive health checking
+- **Session affinity**: Cookie-based sticky sessions
+- **Flexible matching**: Path, host, header, and query parameter-based routing
+
+## Architecture
+
+```
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│  Service A  │         │  Service B  │         │  Service C  │
+│  Instance 1 │         │  Instance 1 │         │  Instance 1 │
+└──────┬──────┘         └──────┬──────┘         └──────┬──────┘
+       │                       │                       │
+       └───────────────────────┼───────────────────────┘
+                               │ NSerf Gossip Protocol
+                               │
+                      ┌────────▼────────┐
+                      │   YARP Gateway  │
+                      │  (Auto-config)  │
+                      └─────────────────┘
+                               │
+                      ┌────────▼────────┐
+                      │  HTTP Requests  │
+                      └─────────────────┘
 ```
