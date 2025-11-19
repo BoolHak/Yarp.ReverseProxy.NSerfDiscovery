@@ -1,8 +1,16 @@
 # Yarp.ReverseProxy.NSerfDiscovery
 
+[![NuGet](https://img.shields.io/nuget/v/NSerfDiscovery.Yarp.svg)](https://www.nuget.org/packages/NSerfDiscovery.Yarp/)
+
 A dynamic service discovery plugin that connects NSerf with YARP reverse proxy.
 
 Services automatically advertise their routing configuration via NSerf gossip protocol, and the gateway dynamically builds its routing table without manual configuration.
+
+## Installation
+
+```bash
+dotnet add package NSerfDiscovery.Yarp
+```
 
 ## Requirements
 
